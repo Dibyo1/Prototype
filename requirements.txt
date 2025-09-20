@@ -13,12 +13,15 @@ Pillow==10.1.0
 PyPDF2==3.0.1
 google-generativeai==0.3.2
 gunicorn==21.2.0
-transformers
+# Lightweight ML libraries for lower memory usage
+transformers[torch]
 sentence-transformers
 torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
 huggingface_hub
-datasets
-accelerate
+# Remove heavy optional dependencies
+# datasets  # Comment out if not needed
+# accelerate  # Comment out if not needed
 redis
 psycopg2-binary
 sqlalchemy

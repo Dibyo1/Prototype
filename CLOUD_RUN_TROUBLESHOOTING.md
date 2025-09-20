@@ -1,4 +1,58 @@
-# Cloud Run Troubleshooting Guide
+# Cloud Run Troubleshooting Guide - Updated
+
+## ❌ Current Issue: Container Failed to Start
+
+**Error Message**: "The user-provided container failed to start and listen on the port defined provided by the PORT=5000 environment variable within the allocated timeout."
+
+### 🔍 Root Cause Analysis
+
+This error occurs when:
+1. **Container startup takes too long** (Cloud Run has timeout limits)
+2. **Application doesn't bind to correct port** (must use PORT environment variable)
+3. **Health check fails** (application not responding on /health endpoint)
+4. **Memory/CPU insufficient** for ML model loading
+5. **Dependencies loading slowly** (PyTorch, transformers, etc.)
+
+### ✅ Applied Fixes
+
+#### 1. **Extended Timeouts & Health Checks**
+```yaml
+# In cloudrun-service.yaml
+run.googleapis.com/timeout: "900s"  # 15 minutes
+startupProbe:
+  initialDelaySeconds: 20
+  timeoutSeconds: 10
+  failureThreshold: 6  # Allow more failures
+livenessProbe:
+  initialDelaySeconds: 60  # Wait longer before first check
+```
+
+#### 2. **Optimized Memory Usage**
+```yaml
+# Reduced memory to stay within quota limits
+run.googleapis.com/memory: "1Gi"
+autoscaling.knative.dev/maxScale: "2"
+```
+
+#### 3. **Enhanced Gunicorn Configuration**
+```dockerfile
+# Extended timeouts for ML model loading
+CMD gunicorn \
+  --bind 0.0.0.0:$PORT \
+  --timeout 600 \
+  --graceful-timeout 30 \
+  --workers 2 \
+  --preload \
+  app:app
+```
+
+#### 4. **Application Startup Logging**
+```python
+# Enhanced logging for debugging startup issues
+print(f"🚀 Flask app initialized for Cloud Run")
+print(f"🌐 Port from environment: {os.environ.get('PORT', '5000')}")
+print(f"🏗️ Running in: {'Cloud Run' if os.environ.get('K_SERVICE') else 'Local/Other'}")
+```
 
 This guide helps you troubleshoot common Cloud Run deployment issues for the TruthGuard application.
 
@@ -251,3 +305,47 @@ gcloud run services update-traffic truthguard-app \
 ```
 
 Remember: Always test locally before deploying to Cloud Run!
+
+## 🚀 **High-Performance Deployment (8GB + 2 CPUs)**
+
+**Updated Deployment Command**:
+```bash
+gcloud run deploy truthguard-app \
+  --source . \
+  --platform managed \
+  --region asia-south1 \
+  --allow-unauthenticated \
+  --memory 8Gi \
+  --cpu 2 \
+  --timeout 900 \
+  --concurrency 80 \
+  --max-instances 1 \
+  --set-env-vars="FLASK_ENV=production,FLASK_DEBUG=false" \
+  --port 5000
+```
+
+**Resource Configuration**:
+- **Memory**: 8GB (sufficient for ML models + PyTorch)
+- **CPU**: 2 cores (faster model loading and processing)  
+- **Max Instances**: 1 (to respect quota limits)
+- **Timeout**: 900s (15 minutes for startup)
+- **Concurrency**: 80 requests per instance
+
+**Cloud Build Alternative** (for cache issues):
+```bash
+# Force fresh build with no cache
+gcloud builds submit --config cloudbuild-8gb.yaml .
+```
+
+**Memory Usage Breakdown**:
+- PyTorch models: ~2-3GB
+- Transformers cache: ~1-2GB  
+- Application runtime: ~1GB
+- System overhead: ~1GB
+- **Total**: ~5-7GB (8GB provides buffer)
+
+**Benefits of Higher Resources**:
+- ✅ Faster model loading (2 CPUs)
+- ✅ Better concurrent request handling
+- ✅ Reduced cold start times
+- ✅ More stable under load

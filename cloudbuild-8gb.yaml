@@ -1,0 +1,30 @@
+steps:
+# Step 1: Build the container image with --no-cache to force fresh build
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/truthguard-app:latest', '.']
+  
+# Step 2: Push the image to Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/truthguard-app:latest']
+
+# Step 3: Deploy to Cloud Run with 8GB memory and 2 CPUs
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  entrypoint: gcloud
+  args:
+  - 'run'
+  - 'deploy'
+  - 'truthguard-app'
+  - '--image=gcr.io/$PROJECT_ID/truthguard-app:latest'
+  - '--platform=managed'
+  - '--region=asia-south1'
+  - '--allow-unauthenticated'
+  - '--memory=8Gi'
+  - '--cpu=2'
+  - '--timeout=900'
+  - '--concurrency=80'
+  - '--max-instances=1'
+  - '--set-env-vars=FLASK_ENV=production,FLASK_DEBUG=false'
+  - '--port=5000'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

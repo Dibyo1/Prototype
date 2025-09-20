@@ -70,10 +70,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app with enhanced configuration
+# Initialize Flask app first - required for other components
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+
+# Log startup information
+print(f"🚀 Flask app initialized for Cloud Run")
+print(f"📊 Debug mode: {app.debug}")
+print(f"🔧 Max content length: {app.config['MAX_CONTENT_LENGTH']} bytes")
+print(f"🌍 Port from environment: {os.environ.get('PORT', '5000')}")
+print(f"🏗️ Running in: {'Cloud Run' if os.environ.get('K_SERVICE') else 'Local/Other'}")
+
+# Enable CORS
+CORS(app, origins=['*'], supports_credentials=True)
+
 
 # Initialize enhanced features if available
 if ENHANCED_FEATURES:
@@ -101,8 +112,7 @@ else:
     limiter = None
     print("⚠️ Running in basic mode - install flask-limiter and flask-caching for enhanced features")
 
-# Enable CORS with enhanced configuration
-CORS(app, origins=['*'], supports_credentials=True)
+
 
 # Database for analytics and caching with automatic cleanup
 # 
@@ -378,13 +388,8 @@ class EnhancedDatabase:
             logger.error(f"Error in smart cache maintenance: {e}")
             return {'error': str(e)}
 
-# Initialize enhanced database
+# Initialize enhanced database after Flask app
 db = EnhancedDatabase()
-
-app = Flask(__name__)
-CORS(app, origins=['*'])
-
-# Enhanced error handlers
 @app.errorhandler(RequestEntityTooLarge)
 def handle_large_file(e):
     return jsonify({
@@ -445,8 +450,31 @@ def page_not_found(error):
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint for App Engine"""
-    return jsonify({'status': 'healthy', 'timestamp': time.time()})
+    """Health check endpoint for Cloud Run"""
+    try:
+        # Check if basic components are working
+        db_status = "ok" if db else "not_initialized"
+        cache_status = "ok" if cache else "disabled"
+        
+        health_data = {
+            'status': 'healthy',
+            'timestamp': time.time(),
+            'database': db_status,
+            'cache': cache_status,
+            'ml_pipeline': ML_AVAILABLE,
+            'port': os.environ.get('PORT', '5000'),
+            'environment': 'production' if not app.debug else 'development'
+        }
+        
+        logger.info(f"Health check successful: {health_data}")
+        return jsonify(health_data)
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500
 
 @app.route('/manifest.json')
 def manifest():
@@ -2347,36 +2375,42 @@ def analyze_image():
         print(f"Error in image analysis: {str(e)}")
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
+# Initialize the application for WSGI servers (Gunicorn, Cloud Run, etc.)
+print("🔧 Initializing TruthGuard Web Application...")
+print(f"🤖 ML Pipeline Available: {ML_AVAILABLE}")
+print(f"🌐 Environment: {os.environ.get('FLASK_ENV', 'production')}")
+print(f"🔐 Running on port: {os.environ.get('PORT', '5000')}")
+
+# Essential for Cloud Run and Gunicorn compatibility
+# This ensures the app object can be found by WSGI servers
+application = app
+
+# Cloud Run startup verification
+if os.environ.get('K_SERVICE'):
+    print("☁️ Running on Google Cloud Run")
+    print(f"📝 Service: {os.environ.get('K_SERVICE')}")
+    print(f"🏷️ Revision: {os.environ.get('K_REVISION', 'unknown')}")
+    print(f"⚙️ Configuration: {os.environ.get('K_CONFIGURATION', 'unknown')}")
+    
+# For direct execution (development only)
 if __name__ == '__main__':
     try:
-        print("Starting TruthGuard Web Application...")
-        print("Make sure you have the required models in the 'models' directory")
-        print("ML Pipeline Available:", ML_AVAILABLE)
+        print("🚀 Starting TruthGuard in development mode...")
         
         # Get port from environment variable (required for Cloud Run)
         port = int(os.environ.get('PORT', 5000))
-        print(f"Starting server on port {port}")
+        print(f"🔌 Starting server on port {port}")
         
         # Check if running in Google Cloud environment
-        if os.environ.get('GAE_ENV', '').startswith('standard'):
-            # Running on Google App Engine
-            print("Running on Google App Engine")
-            # App Engine will handle the server startup
-        elif os.environ.get('K_SERVICE'):  # Cloud Run detection
-            # Running on Google Cloud Run
-            print("Running on Google Cloud Run")
-            # Cloud Run requires binding to 0.0.0.0 on the PORT
-            app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
-        else:
-            # Local development
-            print("Running in local development mode")
-            app.run(debug=True, host='0.0.0.0', port=port, threaded=True)
+        if os.environ.get('K_SERVICE'):  # Cloud Run detection
+            print("☁️ Cloud Run detected - using production settings")
+            # In Cloud Run, Gunicorn handles the server, this shouldn't run
+            print("⚠️ Warning: Running Flask dev server in Cloud Run (should use Gunicorn)")
+        
+        # Local development - use Flask's built-in server
+        app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
+        
     except Exception as e:
-        print(f"Error starting server: {e}")
+        print(f"❌ Error starting server: {e}")
         import traceback
         traceback.print_exc()
-
-# For Google Cloud App Engine and other WSGI servers
-if __name__ != '__main__':
-    # This is needed for Gunicorn and App Engine
-    application = app

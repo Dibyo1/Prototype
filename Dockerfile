@@ -1,4 +1,5 @@
 # Use Python 3.11 slim image as base for better performance
+# Updated for Cloud Run deployment fixes - v2.1
 FROM python:3.11-slim
 
 # Set the working directory inside the container
@@ -61,17 +62,24 @@ USER appuser
 # Expose the port that the app runs on
 EXPOSE 5000
 
-# Health check with better configuration for Cloud Run
-HEALTHCHECK --interval=30s --timeout=15s --start-period=45s --retries=3 \
+# Health check with extended configuration for Cloud Run startup
+HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
     CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Use gunicorn for production deployment with Cloud Run optimized settings
-CMD exec gunicorn \
+CMD echo "🚀 Starting TruthGuard on Cloud Run..." && \
+    echo "Port: $PORT" && \
+    echo "Environment: $FLASK_ENV" && \
+    echo "Service: $K_SERVICE" && \
+    echo "Workers: 2" && \
+    echo "Memory: $(cat /proc/meminfo | grep MemTotal)" && \
+    exec gunicorn \
      --bind 0.0.0.0:$PORT \
      --workers 2 \
      --worker-class gevent \
      --worker-connections 1000 \
-     --timeout 300 \
+     --timeout 600 \
+     --graceful-timeout 30 \
      --keepalive 5 \
      --max-requests 1000 \
      --max-requests-jitter 100 \
@@ -79,4 +87,5 @@ CMD exec gunicorn \
      --access-logfile - \
      --error-logfile - \
      --log-level info \
+     --capture-output \
      app:app
