@@ -52,9 +52,6 @@ COPY . .
 # Create necessary directories for models and cache
 RUN mkdir -p models .cache/transformers .cache/huggingface logs
 
-# Copy environment template as default .env if not provided
-RUN if [ ! -f .env ]; then cp .env.template .env; fi
-
 # Create a non-root user for security
 RUN adduser --disabled-password --gecos '' --shell /bin/bash appuser && \
     chown -R appuser:appuser /app && \
@@ -64,21 +61,22 @@ USER appuser
 # Expose the port that the app runs on
 EXPOSE 5000
 
-# Health check with better configuration
-HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:5000/health || exit 1
+# Health check with better configuration for Cloud Run
+HEALTHCHECK --interval=30s --timeout=15s --start-period=45s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health || exit 1
 
-# Use gunicorn for production deployment with optimized settings
-CMD ["gunicorn", \
-     "--bind", "0.0.0.0:5000", \
-     "--workers", "2", \
-     "--worker-class", "gevent", \
-     "--worker-connections", "1000", \
-     "--timeout", "120", \
-     "--keepalive", "5", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "100", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--log-level", "info", \
-     "app:app"]
+# Use gunicorn for production deployment with Cloud Run optimized settings
+CMD exec gunicorn \
+     --bind 0.0.0.0:$PORT \
+     --workers 2 \
+     --worker-class gevent \
+     --worker-connections 1000 \
+     --timeout 300 \
+     --keepalive 5 \
+     --max-requests 1000 \
+     --max-requests-jitter 100 \
+     --preload \
+     --access-logfile - \
+     --error-logfile - \
+     --log-level info \
+     app:app

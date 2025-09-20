@@ -2353,16 +2353,23 @@ if __name__ == '__main__':
         print("Make sure you have the required models in the 'models' directory")
         print("ML Pipeline Available:", ML_AVAILABLE)
         
+        # Get port from environment variable (required for Cloud Run)
+        port = int(os.environ.get('PORT', 5000))
+        print(f"Starting server on port {port}")
+        
         # Check if running in Google Cloud environment
         if os.environ.get('GAE_ENV', '').startswith('standard'):
             # Running on Google App Engine
             print("Running on Google App Engine")
             # App Engine will handle the server startup
+        elif os.environ.get('K_SERVICE'):  # Cloud Run detection
+            # Running on Google Cloud Run
+            print("Running on Google Cloud Run")
+            # Cloud Run requires binding to 0.0.0.0 on the PORT
+            app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
         else:
             # Local development
             print("Running in local development mode")
-            # Get port from environment variable or default to 5000 for Docker compatibility
-            port = int(os.environ.get('PORT', 5000))
             app.run(debug=True, host='0.0.0.0', port=port, threaded=True)
     except Exception as e:
         print(f"Error starting server: {e}")

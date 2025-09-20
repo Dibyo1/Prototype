@@ -15,15 +15,10 @@ google-generativeai==0.3.2
 gunicorn==21.2.0
 transformers
 sentence-transformers
-torch
+torch --index-url https://download.pytorch.org/whl/cpu
 huggingface_hub
 datasets
 accelerate
-nltk
-requests
-google-generativeai
-Pillow
-opencv-python
 redis
 psycopg2-binary
 sqlalchemy
