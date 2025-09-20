@@ -1,0 +1,35 @@
+{
+  "name": "TruthGuard AI - Advanced Verification System",
+  "short_name": "TruthGuard",
+  "description": "AI-powered fake news detection and content verification",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#00ffff",
+  "orientation": "portrait-primary",
+  "categories": ["news", "productivity", "utilities"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2300ffff' width='192' height='192' rx='24'/><text x='96' y='120' font-family='Arial' font-size='80' text-anchor='middle' fill='%23000'>🛡️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%2300ffff' width='512' height='512' rx='64'/><text x='256' y='320' font-family='Arial' font-size='200' text-anchor='middle' fill='%23000'>🛡️</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'><rect fill='%23050505' width='1280' height='720'/><text x='640' y='360' font-family='Arial' font-size='48' text-anchor='middle' fill='%2300ffff'>TruthGuard AI Screenshot</text></svg>",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    }
+  ],
+  "prefer_related_applications": false
+}

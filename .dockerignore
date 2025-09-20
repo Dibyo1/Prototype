@@ -1,0 +1,78 @@
+# Git
+.git
+.gitignore
+README.md
+GCP_DEPLOYMENT_GUIDE.md
+GITHUB_ACTIONS_SETUP.md
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local development files
+start.bat
+start.sh
+.gcloudignore
+app.yaml
+runtime.txt
+
+# Documentation
+docs/
+*.md
+!requirements.txt
+
+# Large files that might not be needed
+*.zip
+*.tar.gz
+*.rar
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
